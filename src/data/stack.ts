@@ -30,6 +30,7 @@ export const stackLayers: StackLayer[] = [
       { icon: 'skill-icons:vite-dark', name: 'Vite' },
       { icon: 'skill-icons:tailwindcss-dark', name: 'Tailwind CSS' },
       { icon: 'skill-icons:bootstrap', name: 'Bootstrap' },
+      { icon: 'skill-icons:astro', name: 'Astro' },
       { icon: 'skill-icons:javascript', name: 'JavaScript' },
       { icon: 'skill-icons:html', name: 'HTML' },
       { icon: 'skill-icons:css', name: 'CSS' },
