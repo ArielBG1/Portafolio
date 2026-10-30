@@ -1,0 +1,404 @@
+---
+import { PUBLIC_WEB3FORMS_KEY } from 'astro:env/client';
+import { Icon } from 'astro-icon/components';
+import JsonLines from './JsonLines.astro';
+import Section from './Section.astro';
+import { profile } from '../data/profile';
+import { getLang, getSectionId, useTranslations } from '../i18n/utils';
+import { curlLines, MASKED_KEY, WEB3FORMS_ENDPOINT } from '../lib/curl';
+import { jsonToLines } from '../lib/json-tokens';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const accessKey = PUBLIC_WEB3FORMS_KEY?.trim();
+const mailto = `mailto:${profile.email}`;
+const contactPath = `/${getSectionId(lang, 'contact')}`;
+
+const channels = [
+  { label: t('contact.channelEmail'), value: profile.email, href: mailto, icon: 'lucide:mail', external: false },
+  { label: t('contact.channelLinkedin'), value: profile.linkedinHandle, href: profile.linkedin, icon: 'lucide:linkedin', external: true },
+  { label: t('contact.channelGithub'), value: profile.githubHandle, href: profile.github, icon: 'lucide:github', external: true },
+] as const;
+
+// Body y cURL iniciales (vacíos): se actualizan en vivo mientras se escribe. Usan los nombres reales de los campos.
+const emptyFields = { name: '', email: '', message: '' };
+const emptyBody = jsonToLines(emptyFields);
+const emptyCurl = curlLines({ access_key: MASKED_KEY, ...emptyFields });
+
+const fieldClass =
+  'mt-2 block w-full rounded-lg border border-border bg-surface-2 px-4 py-3 text-fg transition-colors placeholder:text-muted hover:border-accent/60 focus:border-accent aria-invalid:border-err';
+const errorClass = 'mt-2 font-mono text-xs text-err';
+---
+
+<Section id={getSectionId(lang, 'contact')} title={t('contact.title')} method="POST" status={null}>
+  <p class="max-w-2xl text-lg leading-relaxed text-pretty text-muted" data-reveal>{t('contact.text')}</p>
+
+  <div class="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:gap-8">
+    {
+      accessKey ? (
+        <form
+          class="card overflow-hidden"
+          action={WEB3FORMS_ENDPOINT}
+          method="POST"
+          novalidate
+          aria-labelledby="contact-form-title"
+          data-contact-form
+          data-msg-sending={t('contact.sending')}
+          data-msg-success={t('contact.success')}
+          data-msg-error={t('contact.error')}
+          data-msg-invalid={t('contact.invalid')}
+          data-code-pending={t('status.pending')}
+          data-code-created={t('status.created')}
+          data-code-invalid={t('status.invalid')}
+          data-code-unavailable={t('status.unavailable')}
+          data-reveal
+        >
+          <div class="flex items-center gap-2.5 border-b border-border bg-surface-2 px-5 py-3 font-mono text-xs" aria-hidden="true">
+            <span class="method text-post">POST</span>
+            <span class="text-fg">{contactPath}</span>
+            <span class="ml-auto text-muted">application/json</span>
+          </div>
+
+          <div class="p-6 sm:p-7">
+            <h3 id="contact-form-title" class="text-lg font-semibold">
+              {t('contact.formTitle')}
+            </h3>
+
+            <input type="hidden" name="access_key" value={accessKey} />
+            <input type="hidden" name="subject" value={t('contact.subject')} />
+            <input type="hidden" name="from_name" value={t('contact.fromName')} />
+
+            {/* Honeypot: invisible para personas; si un bot lo marca, el envío se descarta. */}
+            <div class="hidden" aria-hidden="true">
+              <label>
+                {t('contact.honeypot')}
+                <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" />
+              </label>
+            </div>
+
+            <div class="mt-6 grid gap-5 sm:grid-cols-2">
+              <div>
+                <label for="contact-name" class="text-sm font-medium">
+                  {t('contact.name')}
+                  <span class="text-muted">{` (${t('contact.required')})`}</span>
+                </label>
+                <input
+                  id="contact-name"
+                  name="name"
+                  type="text"
+                  autocomplete="name"
+                  required
+                  maxlength="100"
+                  placeholder={t('contact.namePlaceholder')}
+                  class={fieldClass}
+                  data-error-message={t('contact.nameError')}
+                />
+                <p id="contact-name-error" class={errorClass} hidden data-error-for="contact-name"></p>
+              </div>
+              <div>
+                <label for="contact-email" class="text-sm font-medium">
+                  {t('contact.email')}
+                  <span class="text-muted">{` (${t('contact.required')})`}</span>
+                </label>
+                <input
+                  id="contact-email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  inputmode="email"
+                  required
+                  maxlength="254"
+                  placeholder={t('contact.emailPlaceholder')}
+                  class={fieldClass}
+                  data-error-message={t('contact.emailError')}
+                />
+                <p id="contact-email-error" class={errorClass} hidden data-error-for="contact-email"></p>
+              </div>
+            </div>
+
+            <div class="mt-5">
+              <label for="contact-message" class="text-sm font-medium">
+                {t('contact.message')}
+                <span class="text-muted">{` (${t('contact.required')})`}</span>
+              </label>
+              <textarea
+                id="contact-message"
+                name="message"
+                rows="5"
+                required
+                minlength="10"
+                maxlength="5000"
+                placeholder={t('contact.messagePlaceholder')}
+                class:list={[fieldClass, 'resize-y']}
+                data-error-message={t('contact.messageError')}
+              ></textarea>
+              <p id="contact-message-error" class={errorClass} hidden data-error-for="contact-message"></p>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-6 disabled:cursor-wait disabled:opacity-70" data-submit>
+              <Icon name="lucide:send" class="size-4" aria-hidden="true" data-submit-icon />
+              <Icon name="lucide:loader-circle" is:inline class="hidden size-4 motion-safe:animate-spin" aria-hidden="true" data-submit-spinner />
+              <span data-submit-label>{t('contact.submit')}</span>
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div class="console overflow-hidden" role="note" data-reveal>
+          <div class="console-bar text-xs">
+            <span class="method" style="color: var(--c-post)">POST</span>
+            <span class="text-(--c-muted)">{contactPath}</span>
+            <span class="ml-auto text-(--c-err)">{t('status.unavailable')}</span>
+          </div>
+          <div class="flex flex-col items-start gap-5 p-6 font-sans sm:p-7">
+            <p class="leading-relaxed text-(--c-fg)">{t('contact.notConfigured')}</p>
+            <a href={mailto} class="btn btn-primary">
+              <Icon name="lucide:mail" class="size-4" aria-hidden="true" />
+              {t('contact.mailto')}
+            </a>
+          </div>
+        </div>
+      )
+    }
+
+    <div class="flex flex-col gap-6">
+      {
+        accessKey && (
+          <div class="console overflow-hidden" data-reveal>
+            {/* Vista previa del request (decorativa): pestañas Body / cURL como en Postman. */}
+            <div class="console-bar gap-1 px-2 py-1.5 text-xs">
+              <Icon name="lucide:braces" class="mx-1.5 size-4 text-(--c-muted)" aria-hidden="true" />
+              <button type="button" class="req-tab rounded-md px-2.5 py-1 text-(--c-muted)" aria-pressed="true" data-request-tab="body">
+                {t('contact.requestBody')}
+              </button>
+              <button type="button" class="req-tab rounded-md px-2.5 py-1 text-(--c-muted)" aria-pressed="false" data-request-tab="curl">
+                {t('contact.curl')}
+              </button>
+            </div>
+            <div class="min-h-36 p-4 text-[12px] leading-relaxed sm:p-5" aria-hidden="true">
+              <code class="block" data-request-panel="body" data-body-preview>
+                <JsonLines lines={emptyBody} />
+              </code>
+              <code class="block" hidden data-request-panel="curl" data-curl-preview>
+                <JsonLines lines={emptyCurl} />
+              </code>
+            </div>
+            <div class="console-bar rounded-none border-t border-t-(--c-border) text-xs text-(--c-muted)">
+              <Icon name="lucide:corner-down-left" class="size-4" aria-hidden="true" />
+              <span aria-hidden="true">{t('contact.response')}</span>
+              <span class="method ml-auto text-(--c-muted)" aria-hidden="true" data-response-code>
+                —
+              </span>
+            </div>
+            <p role="status" aria-live="polite" class="p-4 font-sans text-sm leading-relaxed text-(--c-muted) sm:p-5" data-form-status>
+              {t('contact.idle')}
+            </p>
+          </div>
+        )
+      }
+
+      <div data-reveal>
+        <h3 class="sr-only">{t('contact.channels')}</h3>
+        <ul class="grid gap-4">
+          {
+            channels.map((channel) => (
+              <li>
+                <a
+                  href={channel.href}
+                  class="card card-hover flex items-center gap-4 p-5"
+                  {...(channel.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                >
+                  <span class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
+                    <Icon name={channel.icon} class="size-5" aria-hidden="true" />
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-semibold">{channel.label}</span>
+                    <span class="block font-mono text-xs break-words text-muted">
+                      {/* En pantallas angostas, el email corta después de la "@" y no a mitad de palabra. */}
+                      {channel.value.split('@').map((part, index) => (index === 0 ? part : <Fragment>@<wbr />{part}</Fragment>))}
+                    </span>
+                  </span>
+                  <Icon
+                    name={channel.external ? 'lucide:arrow-up-right' : 'lucide:arrow-right'}
+                    class="size-5 shrink-0 text-muted"
+                    aria-hidden="true"
+                  />
+                  {channel.external && <span class="sr-only">{` ${t('a11y.newTab')}`}</span>}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+</Section>
+
+<style>
+  .req-tab[aria-pressed='true'] {
+    color: var(--c-fg);
+    background-color: var(--c-bg);
+  }
+</style>
+
+<script>
+  import { curlLines, MASKED_KEY } from '../lib/curl';
+  import { renderJson, renderTokenLine } from '../lib/json-dom';
+
+  type FieldElement = HTMLInputElement | HTMLTextAreaElement;
+  type Tone = 'idle' | 'pending' | 'ok' | 'warn' | 'err';
+
+  interface Web3FormsResponse {
+    success: boolean;
+  }
+
+  const TONE_COLORS: Record<Tone, string> = {
+    idle: 'var(--c-muted)',
+    pending: 'var(--c-warn)',
+    ok: 'var(--c-ok)',
+    warn: 'var(--c-warn)',
+    err: 'var(--c-err)',
+  };
+
+  const PREVIEW_MAX = 120;
+
+  function isWeb3FormsResponse(value: unknown): value is Web3FormsResponse {
+    return typeof value === 'object' && value !== null && 'success' in value && typeof value.success === 'boolean';
+  }
+
+  const form = document.querySelector<HTMLFormElement>('[data-contact-form]');
+  const preview = document.querySelector<HTMLElement>('[data-body-preview]');
+  const curlPreview = document.querySelector<HTMLElement>('[data-curl-preview]');
+
+  // Pestañas Body / cURL de la vista previa.
+  const requestTabs = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-request-tab]'));
+  requestTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      requestTabs.forEach((other) => other.setAttribute('aria-pressed', String(other === tab)));
+      document.querySelectorAll<HTMLElement>('[data-request-panel]').forEach((panel) => {
+        panel.hidden = panel.dataset.requestPanel !== tab.dataset.requestTab;
+      });
+    });
+  });
+  const status = document.querySelector<HTMLElement>('[data-form-status]');
+  const responseCode = document.querySelector<HTMLElement>('[data-response-code]');
+
+  if (form) {
+    const fields = Array.from(form.querySelectorAll<FieldElement>('input[required], textarea[required]'));
+    const honeypot = form.querySelector<HTMLInputElement>('input[name="botcheck"]');
+    const submit = form.querySelector<HTMLButtonElement>('[data-submit]');
+    const submitLabel = form.querySelector<HTMLElement>('[data-submit-label]');
+    const submitIcon = form.querySelector<SVGElement>('[data-submit-icon]');
+    const submitSpinner = form.querySelector<SVGElement>('[data-submit-spinner]');
+    const defaultLabel = submitLabel?.textContent ?? '';
+    const messages = form.dataset;
+
+    /** Muestra el resultado en el panel de respuesta: código HTTP + mensaje traducido. */
+    const respond = (code: string, text: string, tone: Tone): void => {
+      if (responseCode) {
+        responseCode.textContent = code;
+        responseCode.style.color = TONE_COLORS[tone];
+      }
+      if (status) {
+        status.textContent = text;
+        status.style.color = tone === 'idle' || tone === 'pending' ? TONE_COLORS.idle : TONE_COLORS[tone];
+      }
+    };
+
+    /** Refleja lo que se escribe como el body JSON y el cURL del request (solo visual). */
+    const renderPreview = (): void => {
+      const body: Record<string, string> = {};
+      fields.forEach((field) => {
+        const value = field.value.trim();
+        body[field.name] = value.length > PREVIEW_MAX ? `${value.slice(0, PREVIEW_MAX)}…` : value;
+      });
+      preview?.replaceChildren(...renderJson(body));
+      curlPreview?.replaceChildren(...curlLines({ access_key: MASKED_KEY, ...body }).map(renderTokenLine));
+    };
+
+    const setSending = (sending: boolean): void => {
+      if (submit) submit.disabled = sending;
+      submitIcon?.classList.toggle('hidden', sending);
+      submitSpinner?.classList.toggle('hidden', !sending);
+      if (submitLabel) submitLabel.textContent = sending ? (messages.msgSending ?? defaultLabel) : defaultLabel;
+    };
+
+    /** Valida con la API de restricciones de HTML5 y muestra el mensaje traducido. */
+    const validateField = (field: FieldElement): boolean => {
+      const error = form.querySelector<HTMLElement>(`[data-error-for="${field.id}"]`);
+      // `minlength` no se evalúa en valores asignados por script: lo verificamos también a mano.
+      const tooShort = field.minLength > 0 && field.value.trim().length < field.minLength;
+      const valid = field.checkValidity() && field.value.trim().length > 0 && !tooShort;
+
+      field.setAttribute('aria-invalid', String(!valid));
+      if (error) {
+        error.textContent = valid ? '' : (field.dataset.errorMessage ?? '');
+        error.hidden = valid;
+      }
+      if (valid) {
+        field.removeAttribute('aria-describedby');
+      } else if (error) {
+        field.setAttribute('aria-describedby', error.id);
+      }
+      return valid;
+    };
+
+    fields.forEach((field) => {
+      field.addEventListener('input', () => {
+        renderPreview();
+        if (field.getAttribute('aria-invalid') === 'true') validateField(field);
+      });
+      field.addEventListener('blur', () => {
+        if (field.value.trim().length > 0) validateField(field);
+      });
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      // Si el honeypot está marcado, es un bot: se simula éxito sin enviar nada.
+      if (honeypot?.checked) {
+        form.reset();
+        renderPreview();
+        respond(messages.codeCreated ?? '', messages.msgSuccess ?? '', 'ok');
+        return;
+      }
+
+      const invalidFields = fields.filter((field) => !validateField(field));
+      if (invalidFields.length > 0) {
+        respond(messages.codeInvalid ?? '', messages.msgInvalid ?? '', 'warn');
+        invalidFields[0]?.focus();
+        return;
+      }
+
+      const payload: Record<string, string> = {};
+      new FormData(form).forEach((value, key) => {
+        if (typeof value === 'string') payload[key] = key === 'access_key' ? value : value.trim();
+      });
+
+      setSending(true);
+      respond(messages.codePending ?? '', messages.msgSending ?? '', 'pending');
+
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const result: unknown = await response.json().catch(() => null);
+
+        if (response.ok && isWeb3FormsResponse(result) && result.success) {
+          form.reset();
+          renderPreview();
+          fields.forEach((field) => field.removeAttribute('aria-invalid'));
+          respond(messages.codeCreated ?? '', messages.msgSuccess ?? '', 'ok');
+        } else {
+          respond(messages.codeUnavailable ?? '', messages.msgError ?? '', 'err');
+        }
+      } catch {
+        respond(messages.codeUnavailable ?? '', messages.msgError ?? '', 'err');
+      } finally {
+        setSending(false);
+      }
+    });
+  }
+</script>

@@ -1,0 +1,75 @@
+---
+import { Icon } from 'astro-icon/components';
+import Section from './Section.astro';
+import { profile } from '../data/profile';
+import { getLang, getSectionId, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+// El "API monitor" lo genera una GitHub Action en el repo de perfil (ArielBG1/ArielBG1, rama `output`).
+const outputBranch = 'https://raw.githubusercontent.com/ArielBG1/ArielBG1/output';
+const monitorSuffix = lang === 'es' ? '' : `-${lang}`;
+const images = {
+  monitorDark: `${outputBranch}/api-monitor${monitorSuffix}.svg`,
+  monitorLight: `${outputBranch}/api-monitor${monitorSuffix}-light.svg`,
+  langs: 'https://raw.githubusercontent.com/ArielBG1/ArielBG1/main/profile/top-langs.svg',
+};
+
+// Si una imagen externa no carga, se oculta su tarjeta completa para no dejar un ícono roto.
+const hideOnError = "this.closest('figure')?.setAttribute('hidden', '')";
+---
+
+<Section id={getSectionId(lang, 'github')} title={t('github.title')}>
+  <div class="flex flex-col items-center gap-6">
+    <figure class="w-full" data-reveal>
+      <picture>
+        {/* El `media` lo ajusta el script según el tema del sitio (no el del sistema). */}
+        <source srcset={images.monitorDark} media="all" data-monitor-dark />
+        <img
+          src={images.monitorLight}
+          alt={t('github.monitorAlt')}
+          width="880"
+          height="300"
+          loading="lazy"
+          decoding="async"
+          class="h-auto w-full"
+          onerror={hideOnError}
+        />
+      </picture>
+    </figure>
+    <figure class="card flex w-full max-w-sm items-center justify-center p-4" data-reveal style="--reveal-delay: 100ms">
+      <img
+        src={images.langs}
+        alt={t('github.langsAlt')}
+        width="300"
+        height="165"
+        loading="lazy"
+        decoding="async"
+        class="h-auto w-full max-w-[300px]"
+        onerror={hideOnError}
+      />
+    </figure>
+  </div>
+
+  <div class="mt-8 flex justify-center" data-reveal>
+    <a href={profile.github} target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+      <Icon name="lucide:github" class="size-4" aria-hidden="true" />
+      {t('github.profile')}
+      <span class="sr-only">{` ${t('a11y.newTab')}`}</span>
+    </a>
+  </div>
+</Section>
+
+<script>
+  import { getCurrentTheme, THEME_CHANGE_EVENT } from '../lib/theme';
+
+  const darkSource = document.querySelector<HTMLSourceElement>('[data-monitor-dark]');
+
+  function syncMonitor(): void {
+    darkSource?.setAttribute('media', getCurrentTheme() === 'dark' ? 'all' : 'not all');
+  }
+
+  syncMonitor();
+  document.addEventListener(THEME_CHANGE_EVENT, syncMonitor);
+</script>

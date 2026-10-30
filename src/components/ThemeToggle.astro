@@ -1,0 +1,31 @@
+---
+import { Icon } from 'astro-icon/components';
+import { getLang, useTranslations } from '../i18n/utils';
+
+const t = useTranslations(getLang(Astro.currentLocale));
+---
+
+<button type="button" class="icon-btn" aria-label={t('theme.toggle')} aria-pressed="true" data-theme-toggle>
+  <Icon name="lucide:sun" is:inline class="hidden size-5 dark:block" aria-hidden="true" />
+  <Icon name="lucide:moon" is:inline class="block size-5 dark:hidden" aria-hidden="true" />
+</button>
+
+<script>
+  import { applyTheme, getCurrentTheme, THEME_CHANGE_EVENT } from '../lib/theme';
+
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]');
+
+  function syncButtons(): void {
+    const isDark = getCurrentTheme() === 'dark';
+    buttons.forEach((button) => button.setAttribute('aria-pressed', String(isDark)));
+  }
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+      applyTheme(getCurrentTheme() === 'dark' ? 'light' : 'dark');
+    });
+  });
+
+  document.addEventListener(THEME_CHANGE_EVENT, syncButtons);
+  syncButtons();
+</script>

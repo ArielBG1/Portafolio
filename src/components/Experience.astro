@@ -1,0 +1,78 @@
+---
+import { Icon } from 'astro-icon/components';
+import Section from './Section.astro';
+import { experience, getTaskGroups } from '../data/experience';
+import { formatMonthYear } from '../lib/date';
+import { getLang, getSectionId, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const lineNumber = (index: number) => String(index + 1).padStart(2, '0');
+
+// La numeración de las líneas del log continúa entre grupos.
+const jobs = experience[lang].map((item) => {
+  let offset = 0;
+  const groups = getTaskGroups(item).map((group) => {
+    const start = offset;
+    offset += group.items.length;
+    return { ...group, start };
+  });
+  return { item, groups, total: offset };
+});
+---
+
+<Section id={getSectionId(lang, 'experience')} title={t('experience.title')}>
+  <div class="space-y-8">
+    {
+      jobs.map(({ item, groups, total }) => (
+        <article class="console overflow-hidden" data-reveal>
+          <div class="console-bar text-xs text-(--c-muted)">
+            <Icon name="lucide:terminal" class="size-4" aria-hidden="true" />
+            <span aria-hidden="true">{`tail -f ${t('experience.logFile')}`}</span>
+            <span class="ml-auto flex items-center gap-1.5 text-(--c-ok)">
+              <Icon name="lucide:calendar" class="size-3.5" aria-hidden="true" />
+              <time datetime={item.start}>{formatMonthYear(item.start, lang)}</time>
+              {' – '}
+              {item.end ? <time datetime={item.end}>{formatMonthYear(item.end, lang)}</time> : <span>{t('experience.present')}</span>}
+            </span>
+          </div>
+
+          <div class="p-5 sm:p-7">
+            <h3 class="font-sans text-xl font-semibold text-(--c-fg) sm:text-2xl">{item.role}</h3>
+            <p class="mt-1 font-sans text-(--c-muted)">{item.company}</p>
+
+            <div class="mt-6" data-log>
+              {groups.map((group) => (
+                <div class="mt-6 first:mt-0">
+                  {group.title && (
+                    <h4 class="mb-3 text-xs font-semibold tracking-wider text-(--c-key) uppercase" data-log-line>
+                      <span aria-hidden="true"># </span>
+                      {group.title}
+                    </h4>
+                  )}
+                  <ol class="space-y-3">
+                    {group.items.map((task, index) => (
+                      <li class="grid grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-x-3 text-[13px]" data-log-line>
+                        <span class="text-(--c-muted) select-none" aria-hidden="true">
+                          {lineNumber(group.start + index)}
+                        </span>
+                        <span class="text-(--c-ok)" aria-hidden="true">
+                          INFO
+                        </span>
+                        <span class="font-sans text-[15px] leading-relaxed text-(--c-fg)">{task}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+              <p class="mt-3 grid grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-x-3 text-[13px]" aria-hidden="true">
+                <span class="text-(--c-muted)">{lineNumber(total)}</span>
+                <span class="inline-block h-[1.1em] w-[0.6ch] translate-y-[0.15em] bg-(--c-key) motion-safe:animate-blink" />
+              </p>
+            </div>
+          </div>
+        </article>
+      ))
+    }
+  </div>
+</Section>

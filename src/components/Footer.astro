@@ -1,0 +1,191 @@
+---
+import { Icon } from 'astro-icon/components';
+import TerminalPrompt from './TerminalPrompt.astro';
+import { profile } from '../data/profile';
+import type { SectionKey, UiKey } from '../i18n/ui';
+import { getLang, getSectionHref, getSectionId, useTranslations } from '../i18n/utils';
+import { getApiUrl } from '../lib/api';
+import type { HttpMethod } from '../lib/http';
+import type { Shell } from '../lib/terminal';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const year = new Date().getFullYear();
+const apiUrl = getApiUrl(lang, 'profile');
+const handle = profile.apiPath.split('/').pop() ?? 'ariel-bogado';
+const [user = 'ariel', host = 'bogado'] = handle.split('-');
+const prompt = { user, host, dir: t('footer.dir') };
+const socialFile = t('footer.socialFile');
+
+// Pestañas estilo Windows Terminal: cada una cambia el prompt, la sintaxis y los colores.
+const shells = [
+  { id: 'ps', label: 'PowerShell', glyph: '>_' },
+  { id: 'kali', label: 'Kali Linux', glyph: '$' },
+  { id: 'cmd', label: t('footer.cmd'), glyph: 'C:\\' },
+] as const satisfies readonly { id: Shell; label: string; glyph: string }[];
+
+const endpoints = [
+  { key: 'about', method: 'GET' },
+  { key: 'stack', method: 'GET' },
+  { key: 'experience', method: 'GET' },
+  { key: 'projects', method: 'GET' },
+  { key: 'github', method: 'GET' },
+  { key: 'education', method: 'GET' },
+  { key: 'contact', method: 'POST' },
+] as const satisfies readonly { key: SectionKey; method: HttpMethod }[];
+
+const social = [
+  { label: 'social.linkedin', href: profile.linkedin, icon: 'lucide:linkedin', external: true },
+  { label: 'social.github', href: profile.github, icon: 'lucide:github', external: true },
+  { label: 'social.email', href: `mailto:${profile.email}`, icon: 'lucide:mail', external: false },
+] as const satisfies readonly { label: UiKey; href: string; icon: string; external: boolean }[];
+
+const wordmark = Array.from(handle);
+---
+
+<footer class="border-t border-border bg-surface/40 py-16 sm:py-20" data-footer>
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <div class="terminal overflow-hidden rounded-xl border border-(--t-border) shadow-2xl shadow-black/40" data-terminal data-shell="ps">
+      {/* Barra de título con pestañas, como Windows Terminal. */}
+      <div class="flex items-stretch bg-(--t-bar)">
+        <div class="flex min-w-0 flex-1 items-end gap-1 overflow-x-auto px-2 pt-2 [scrollbar-width:none]" role="group" aria-label={t('footer.shell')}>
+          {
+            shells.map((shell, index) => (
+              <button
+                type="button"
+                class="terminal-tab inline-flex shrink-0 items-center gap-2 rounded-t-lg px-3 py-2 text-xs whitespace-nowrap transition-colors"
+                aria-pressed={index === 0 ? 'true' : 'false'}
+                data-shell-tab={shell.id}
+              >
+                <span class="font-mono text-[11px] font-semibold text-(--t-accent)" aria-hidden="true">
+                  {shell.glyph}
+                </span>
+                {shell.label}
+              </button>
+            ))
+          }
+        </div>
+        <div class="hidden items-center text-(--t-tab) sm:flex" aria-hidden="true">
+          <span class="flex h-full w-11 items-center justify-center"><Icon name="lucide:minus" is:inline class="size-4" /></span>
+          <span class="flex h-full w-11 items-center justify-center"><Icon name="lucide:square" is:inline class="size-3.5" /></span>
+          <span class="flex h-full w-11 items-center justify-center"><Icon name="lucide:x" is:inline class="size-4" /></span>
+        </div>
+      </div>
+
+      <div class="px-4 py-5 font-mono text-[12.5px] leading-relaxed sm:px-6 sm:py-6 sm:text-[13px]">
+        {/* "Banner" de la terminal. */}
+        <p class="text-(--t-muted)">{`${profile.name} · ${profile.title}`}</p>
+        <p class="text-(--t-muted)">{`© ${year} ${profile.name} · ${t('footer.madeWith')}`}</p>
+
+        <div class="mt-5" data-term-step>
+          <TerminalPrompt {...prompt} commands={{ ps: 'Get-Endpoint', kali: 'ls ./endpoints', cmd: 'dir endpoints' }} />
+          <nav aria-labelledby="footer-endpoints" class="mt-2" data-term-output>
+            <h2 id="footer-endpoints" class="sr-only">{t('footer.endpoints')}</h2>
+            <ul class="grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-3 lg:grid-cols-4">
+              {
+                endpoints.map(({ key, method }) => (
+                  <li>
+                    <a href={getSectionHref(lang, key)} class="t-link inline-flex items-baseline gap-2.5">
+                      <span class:list={['w-9 text-[11px] font-semibold', method === 'POST' ? 'text-(--t-post)' : 'text-(--t-get)']} aria-hidden="true">
+                        {method}
+                      </span>
+                      {`/${getSectionId(lang, key)}`}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </nav>
+        </div>
+
+        <div class="mt-5" data-term-step>
+          <TerminalPrompt {...prompt} commands={{ ps: `Get-Content .\\${socialFile}`, kali: `cat ${socialFile}`, cmd: `type ${socialFile}` }} />
+          <div class="mt-2" data-term-output>
+            <h2 class="sr-only">{t('footer.elsewhere')}</h2>
+            <ul class="flex flex-wrap gap-x-6 gap-y-1">
+              {
+                social.map((item) => (
+                  <li>
+                    <a
+                      href={item.href}
+                      class="t-link inline-flex items-center gap-2"
+                      {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    >
+                      <Icon name={item.icon} class="size-3.5" aria-hidden="true" />
+                      {t(item.label)}
+                      {item.external && <span class="sr-only">{` ${t('a11y.newTab')}`}</span>}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-5" data-term-step>
+          <TerminalPrompt {...prompt} commands={{ ps: `Invoke-RestMethod ${apiUrl}`, kali: `curl -s ${apiUrl}`, cmd: `curl ${apiUrl}` }} />
+          <p class="mt-2" data-term-output>
+            <a href={apiUrl} target="_blank" rel="noopener noreferrer" class="t-link inline-flex flex-wrap items-baseline gap-x-2.5">
+              <span class="text-(--t-get)" aria-hidden="true">200 OK</span>
+              <span class="[overflow-wrap:anywhere]">{apiUrl}</span>
+              <span class="sr-only">{` ${t('footer.api')} ${t('a11y.newTab')}`}</span>
+            </a>
+          </p>
+        </div>
+
+        <div class="mt-5" data-term-step>
+          <TerminalPrompt {...prompt} commands={{ ps: 'whoami', kali: 'whoami', cmd: 'whoami' }} />
+          {/* Salida de `whoami`: el wordmark gigante (decorativo). Las letras suben con el scroll y se llenan al pasar el mouse. */}
+          <div class="wordmark-wrap mt-1 overflow-hidden" aria-hidden="true" data-wordmark data-term-output>
+            <p class="wordmark leading-none font-semibold tracking-tighter whitespace-nowrap select-none">
+              {wordmark.map((char) => <span class="inline-block transition-colors duration-300" data-wordmark-char>{char}</span>)}
+            </p>
+          </div>
+        </div>
+
+        <a href="#top" class="group mt-5 block w-fit rounded">
+          <span class="sr-only">{t('footer.backToTop')}</span>
+          <TerminalPrompt
+            {...prompt}
+            commands={{ ps: 'cd ~', kali: 'cd ~', cmd: 'cd \\' }}
+            comment={t('footer.backToTop').toLowerCase()}
+            cursor
+          />
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .wordmark-wrap {
+    container-type: inline-size;
+  }
+
+  .wordmark {
+    font-size: min(14.5cqi, 8rem);
+    padding-block: 0.08em;
+    color: transparent;
+    -webkit-text-stroke: 1px color-mix(in srgb, var(--t-fg) 45%, transparent);
+  }
+
+  .wordmark span:hover {
+    color: var(--t-accent);
+  }
+</style>
+
+<script>
+  // Cambiar de shell: actualiza `data-shell` (CSS muestra el prompt y los colores de esa terminal).
+  const terminal = document.querySelector<HTMLElement>('[data-terminal]');
+  if (terminal) {
+    const tabs = Array.from(terminal.querySelectorAll<HTMLButtonElement>('[data-shell-tab]'));
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const shell = tab.dataset.shellTab;
+        if (!shell) return;
+        terminal.dataset.shell = shell;
+        tabs.forEach((other) => other.setAttribute('aria-pressed', String(other === tab)));
+      });
+    });
+  }
+</script>

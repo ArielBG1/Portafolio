@@ -1,0 +1,37 @@
+---
+import ProjectCard from './ProjectCard.astro';
+import Section from './Section.astro';
+import { getProjects } from '../lib/projects';
+import { getLang, getSectionId, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const projects = await getProjects(lang);
+const featured = projects.filter((project) => project.data.featured);
+const others = projects.filter((project) => !project.data.featured);
+---
+
+<Section id={getSectionId(lang, 'projects')} title={t('projects.title')}>
+  <div class="space-y-6">
+    {
+      featured.map((project) => (
+        <div data-reveal data-featured>
+          <ProjectCard project={project.data} slug={project.id} featured />
+        </div>
+      ))
+    }
+
+    {
+      others.length > 0 && (
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {others.map((project) => (
+            <div data-reveal>
+              <ProjectCard project={project.data} slug={project.id} />
+            </div>
+          ))}
+        </div>
+      )
+    }
+  </div>
+</Section>

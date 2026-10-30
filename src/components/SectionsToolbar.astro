@@ -1,0 +1,38 @@
+---
+import { Icon } from 'astro-icon/components';
+import { profile } from '../data/profile';
+import { sectionIds } from '../i18n/ui';
+import { getLang, useTranslations } from '../i18n/utils';
+import { API_VERSION } from '../lib/api';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const ids = Object.values(sectionIds[lang]);
+const handle = profile.apiPath.split('/').pop() ?? profile.name;
+---
+
+{/* Barra de información de la API, como la cabecera de Swagger UI, con el control para expandir/contraer todo. */}
+<div class="mx-auto max-w-6xl px-4 pt-8 pb-1.5 sm:px-6 sm:pt-12 lg:px-8">
+  <div class="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+    <p class="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-muted">
+      <Icon name="lucide:braces" class="size-4 text-brand" aria-hidden="true" />
+      <span class="font-semibold text-fg">{handle}</span>
+      <span class="rounded border border-border px-1.5 py-0.5 text-[10px] font-semibold">{`API ${API_VERSION}`}</span>
+      <span>{`${ids.length} ${t('sections.endpoints')}`}</span>
+    </p>
+    {/* Oculto hasta que carga el script (sin JS no podría colapsar nada). */}
+    <button
+      type="button"
+      class="btn btn-secondary ml-auto min-h-9 px-3 py-1.5 font-mono text-xs"
+      aria-controls={ids.map((id) => `${id}-body`).join(' ')}
+      data-collapse-all
+      data-label-expand={t('sections.expandAll')}
+      data-label-collapse={t('sections.collapseAll')}
+      hidden
+    >
+      <Icon name="lucide:chevrons-down-up" is:inline class="size-4" aria-hidden="true" data-icon-collapse />
+      <Icon name="lucide:chevrons-up-down" is:inline class="hidden size-4" aria-hidden="true" data-icon-expand />
+      <span data-collapse-all-label>{t('sections.collapseAll')}</span>
+    </button>
+  </div>
+</div>

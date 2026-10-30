@@ -1,0 +1,229 @@
+---
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+import JsonLines from './JsonLines.astro';
+import SocialLinks from './SocialLinks.astro';
+import { profile } from '../data/profile';
+import { apiResources, heroRoles } from '../i18n/ui';
+import { getLang, getSectionHref, useTranslations } from '../i18n/utils';
+import { API_VERSION, apiResourceKeys, getApiResource, getApiUrl } from '../lib/api';
+import { jsonToLines } from '../lib/json-tokens';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const roles = heroRoles[lang];
+
+// La foto es opcional: si existe `src/assets/images/ariel.*` se optimiza con astro:assets.
+const photos = import.meta.glob<ImageMetadata>('../assets/images/ariel.{jpg,jpeg,png,webp,avif}', {
+  eager: true,
+  import: 'default',
+});
+const photo = Object.values(photos)[0];
+
+// El cliente arranca mostrando el recurso "perfil", renderizado en el build (idéntico al JSON publicado).
+const endpoints = apiResourceKeys.map((key) => ({ key, slug: apiResources[lang][key], url: getApiUrl(lang, key) }));
+const initial = endpoints[0];
+const initialBody = await getApiResource(lang, 'profile');
+const initialText = `${JSON.stringify(initialBody, null, 2)}\n`;
+const initialSize = new TextEncoder().encode(initialText).length;
+---
+
+<section class="relative isolate overflow-hidden pt-16" aria-labelledby="hero-title" data-hero>
+  <div class="hero-backdrop absolute inset-0 -z-10" aria-hidden="true" data-hero-backdrop>
+    <div class="bg-grid absolute inset-0"></div>
+  </div>
+
+  <div
+    class="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-4 pt-14 pb-20 sm:px-6 sm:pt-20 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-12 lg:px-8 lg:pt-20 lg:pb-24"
+  >
+    <div data-hero-copy>
+      <div class="flex items-center gap-3">
+        {
+          photo && (
+            <Image
+              src={photo}
+              alt={t('hero.photoAlt')}
+              width={96}
+              height={96}
+              loading="eager"
+              class="size-12 rounded-full border border-border object-cover"
+            />
+          )
+        }
+        <p class="flex items-center gap-3 font-mono text-sm" aria-hidden="true">
+          <span class="method text-get">GET</span>
+          <span class="text-fg">{profile.apiPath}</span>
+        </p>
+      </div>
+
+      <h1 id="hero-title" class="mt-5 text-5xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
+        {profile.name}
+      </h1>
+      <p class="mt-4 text-xl font-medium text-fg/80 sm:text-2xl">{profile.title}</p>
+      <p class="sr-only">{`${t('hero.roles')}: ${roles.join('; ')}`}</p>
+      <p class="mt-3 flex items-center gap-1.5 text-sm text-fg/80">
+        <Icon name="lucide:map-pin" class="size-4 text-brand-2" aria-hidden="true" />
+        {profile.location}
+      </p>
+
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href={profile.cv} download class="btn btn-primary">
+          <Icon name="lucide:download" class="size-4" aria-hidden="true" />
+          {t('hero.cv')}
+        </a>
+        <a href={getSectionHref(lang, 'contact')} class="btn btn-secondary">
+          <span class="method text-post" aria-hidden="true">POST</span>
+          {t('hero.contact')}
+        </a>
+      </div>
+
+      <SocialLinks class="mt-6 -ml-2.5" />
+    </div>
+
+    {/* Cliente de API estilo Postman: hace requests reales a /api/v1/<lang>/*.json */}
+    <div
+      class="console relative min-w-0 overflow-hidden"
+      role="region"
+      aria-label={t('api.label')}
+      data-hero-console
+      data-api-client
+      data-msg-error={t('api.error')}
+      data-msg-copied={t('api.copied')}
+      data-msg-received={t('api.received')}
+      data-msg-pending={t('status.pending')}
+    >
+      <div class="console-bar text-xs">
+        <Icon name="lucide:braces" class="size-4 text-(--c-key)" aria-hidden="true" />
+        <span class="text-(--c-fg)">{profile.apiPath.split('/').pop()}</span>
+        <span class="text-(--c-muted)">{`/ API ${API_VERSION}`}</span>
+        <a
+          href={initial?.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="ml-auto inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-(--c-muted) transition-colors hover:text-(--c-fg)"
+          data-api-open
+        >
+          {t('api.open')}
+          <Icon name="lucide:square-arrow-out-up-right" class="size-3.5" aria-hidden="true" />
+          <span class="sr-only">{` ${t('a11y.newTab')}`}</span>
+        </a>
+      </div>
+
+      {/* Pestañas de requests guardados, como en Postman. */}
+      <div class="relative border-b border-(--c-border)">
+        <div
+          class="flex gap-1 overflow-x-auto px-2 py-2 pr-10 text-xs [mask-image:linear-gradient(to_right,#000_calc(100%-3rem),transparent)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          role="group"
+          aria-label={t('api.collection')}
+        >
+          {
+            endpoints.map((endpoint, index) => (
+              <button
+                type="button"
+                class="api-tab inline-flex shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2.5 py-1.5 whitespace-nowrap text-(--c-muted) transition-colors hover:text-(--c-fg)"
+                aria-pressed={index === 0 ? 'true' : 'false'}
+                data-api-endpoint={endpoint.url}
+              >
+                <span class="font-semibold text-(--c-get)">GET</span>
+                {endpoint.slug}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      {/* Barra del request */}
+      <div class="flex items-stretch gap-2 p-3">
+        <div class="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-(--c-border) bg-(--c-bar) px-3 py-2 text-xs">
+          <span class="method shrink-0" style="color: var(--c-get)">GET</span>
+          <span class="min-w-0 truncate text-(--c-fg)" data-api-url data-type>{initial?.url}</span>
+        </div>
+        <button
+          type="button"
+          class="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#4522c0] disabled:cursor-wait disabled:opacity-70 sm:px-4"
+          data-api-send
+        >
+          <Icon name="lucide:send-horizontal" class="size-3.5" aria-hidden="true" />
+          {t('api.send')}
+        </button>
+      </div>
+      <div class="relative h-px bg-(--c-border)" aria-hidden="true">
+        <span class="absolute inset-0 origin-left scale-x-0 bg-(--c-key)" data-api-progress></span>
+      </div>
+
+      {/* Respuesta: pestañas Body/Headers + status, tiempo y tamaño reales. */}
+      <div class="flex flex-wrap items-center gap-x-1 gap-y-1 border-b border-(--c-border) px-2 py-1.5 text-xs">
+        <button type="button" class="api-tab rounded-md px-2.5 py-1 text-(--c-muted) hover:text-(--c-fg)" aria-pressed="true" data-api-tab="body">
+          {t('api.body')}
+        </button>
+        <button type="button" class="api-tab rounded-md px-2.5 py-1 text-(--c-muted) hover:text-(--c-fg)" aria-pressed="false" data-api-tab="headers">
+          {t('api.headers')}
+        </button>
+        <span class="ml-auto flex items-center gap-3 pl-2">
+          <span class="flex items-center gap-1.5 text-(--c-ok)" data-api-status>
+            <span class="size-2 rounded-full bg-current" aria-hidden="true"></span>
+            <span data-api-status-text>{t('status.ok')}</span>
+          </span>
+          <span class="text-(--c-muted)" data-api-time></span>
+          <span class="text-(--c-muted)" data-api-size>{`${initialSize} B`}</span>
+          <button
+            type="button"
+            class="inline-flex size-7 items-center justify-center rounded-md text-(--c-muted) transition-colors hover:bg-(--c-bar) hover:text-(--c-fg)"
+            aria-label={t('api.copy')}
+            data-api-copy
+          >
+            <Icon name="lucide:copy" is:inline class="size-3.5" aria-hidden="true" data-copy-icon />
+            <Icon name="lucide:check" is:inline class="hidden size-3.5 text-(--c-ok)" aria-hidden="true" data-copied-icon />
+          </button>
+        </span>
+      </div>
+
+      <div
+        class="h-[18rem] overflow-auto p-4 text-[11px] leading-relaxed sm:h-[20rem] sm:text-[12.5px]"
+        tabindex="0"
+        role="region"
+        aria-label={t('api.response')}
+        data-api-panel="body"
+      >
+        <code class="block" data-api-body>
+          <JsonLines lines={jsonToLines(initialBody)} stream />
+        </code>
+      </div>
+      <div
+        class="h-[18rem] overflow-auto p-4 text-[11px] leading-relaxed sm:h-[20rem] sm:text-[12.5px]"
+        tabindex="0"
+        role="region"
+        aria-label={t('api.headers')}
+        hidden
+        data-api-panel="headers"
+      >
+        <code class="block" data-api-headers>
+          <span class="block whitespace-pre-wrap"><span class="tok-key">content-type</span><span class="tok-punct">: </span>application/json; charset=utf-8</span>
+        </code>
+      </div>
+
+      <p class="sr-only" aria-live="polite" data-api-live></p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-backdrop {
+    background: radial-gradient(70% 60% at 20% 0%, rgb(81 43 212 / 0.16), transparent 70%);
+  }
+
+  .hero-backdrop .bg-grid {
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 35%, transparent 80%);
+  }
+
+  .api-tab[aria-pressed='true'] {
+    color: var(--c-fg);
+    background-color: var(--c-bar);
+    border-color: var(--c-border);
+  }
+</style>
+
+<script>
+  import '../scripts/api-client';
+</script>

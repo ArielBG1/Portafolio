@@ -1,0 +1,32 @@
+---
+import { Icon } from 'astro-icon/components';
+import RichText from './RichText.astro';
+import Section from './Section.astro';
+import { about } from '../data/about';
+import { getLang, getSectionId, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const { bio, highlights } = about[lang];
+---
+
+<Section id={getSectionId(lang, 'about')} title={t('about.title')}>
+  <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-12">
+    <p class="text-lg leading-relaxed text-pretty text-muted sm:text-xl sm:leading-relaxed" data-reveal>{bio}</p>
+
+    <ul class="card space-y-1 p-3 sm:p-4" aria-label={t('about.highlights')} data-reveal>
+      {
+        highlights.map((item) => (
+          <li class="flex items-start gap-4 rounded-xl p-3 transition-colors hover:bg-surface-2">
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-surface-2 text-brand">
+              <Icon name={`lucide:${item.icon}`} class="size-5" aria-hidden="true" />
+            </span>
+            <span class="pt-2 text-sm leading-relaxed text-muted sm:text-base">
+              <RichText text={item.text} />
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Section>

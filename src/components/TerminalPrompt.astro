@@ -1,0 +1,53 @@
+---
+import type { ShellCommands } from '../lib/terminal';
+
+interface Props {
+  commands: ShellCommands;
+  user: string;
+  host: string;
+  /** Carpeta actual del prompt de Kali (ej.: `portafolio`). */
+  dir: string;
+  /** Comentario opcional después del comando (cada shell usa su propia sintaxis de comentario). */
+  comment?: string;
+  /** Cursor parpadeante al final de la línea. */
+  cursor?: boolean;
+}
+
+const { commands, user, host, dir, comment, cursor = false } = Astro.props;
+const psPath = `PS C:\\${user}-${host}>`;
+const cmdPath = `C:\\${user}-${host}>`;
+---
+
+{/* Las tres variantes se renderizan; global.css muestra solo la del shell activo (`data-shell` de la terminal). */}
+<div class="[overflow-wrap:anywhere]" aria-hidden="true">
+  <span class="block" data-shell-only="ps">
+    <span class="text-(--t-prompt)">{psPath}</span>{' '}
+    <span class="inline-block text-(--t-cmd)" data-term-cmd>{commands.ps}</span>
+    {comment && <span class="text-(--t-muted)">{`  # ${comment}`}</span>}
+    {cursor && <span class="t-cursor motion-safe:animate-blink" />}
+  </span>
+
+  <span class="block" data-shell-only="kali">
+    <span class="block">
+      <span class="text-(--t-frame)">┌──(</span>
+      <span class="font-semibold text-(--t-user)">{`${user}㉿${host}`}</span>
+      <span class="text-(--t-frame)">)-[</span>
+      <span class="font-semibold text-(--t-fg)">{`~/${dir}`}</span>
+      <span class="text-(--t-frame)">]</span>
+    </span>
+    <span class="block">
+      <span class="text-(--t-frame)">└─</span>
+      <span class="font-semibold text-(--t-user)">$</span>{' '}
+      <span class="inline-block text-(--t-cmd)" data-term-cmd>{commands.kali}</span>
+      {comment && <span class="text-(--t-muted)">{`  # ${comment}`}</span>}
+      {cursor && <span class="t-cursor motion-safe:animate-blink" />}
+    </span>
+  </span>
+
+  <span class="block" data-shell-only="cmd">
+    <span class="text-(--t-prompt)">{cmdPath}</span>
+    <span class="inline-block text-(--t-cmd)" data-term-cmd>{commands.cmd}</span>
+    {comment && <span class="text-(--t-muted)">{`  :: ${comment}`}</span>}
+    {cursor && <span class="t-cursor motion-safe:animate-blink" />}
+  </span>
+</div>

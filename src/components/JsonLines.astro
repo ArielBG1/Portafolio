@@ -1,0 +1,26 @@
+---
+import type { JsonLine } from '../lib/json-tokens';
+
+interface Props {
+  lines: JsonLine[];
+  /** Marca cada línea con `data-stream` para que el Hero la "streamee" al cargar. */
+  stream?: boolean;
+}
+
+const { lines, stream = false } = Astro.props;
+const classByKind = {
+  key: 'tok-key',
+  string: 'tok-string',
+  number: 'tok-number',
+  punct: 'tok-punct',
+  plain: undefined,
+} as const;
+---
+
+{
+  lines.map((line) => (
+    <span class="block whitespace-pre-wrap [overflow-wrap:anywhere]" data-stream={stream ? '' : undefined}>
+      {line.map((token) => <span class={classByKind[token.kind]}>{token.text}</span>)}
+    </span>
+  ))
+}

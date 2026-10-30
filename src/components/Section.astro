@@ -1,0 +1,42 @@
+---
+import SectionTitle from './SectionTitle.astro';
+import type { HttpMethod } from '../lib/http';
+import { getLang, useTranslations } from '../i18n/utils';
+
+interface Props {
+  id: string;
+  title: string;
+  method?: HttpMethod;
+  /** Status del encabezado. Por defecto "200 OK"; `null` lo deja "pendiente…". */
+  status?: string | null;
+  class?: string;
+}
+
+const t = useTranslations(getLang(Astro.currentLocale));
+const { id, title, method = 'GET', status = t('status.ok'), class: className } = Astro.props;
+const titleId = `${id}-title`;
+const bodyId = `${id}-body`;
+const path = `/${id}`;
+---
+
+<section
+  id={id}
+  aria-labelledby={titleId}
+  class:list={[
+    'group/section relative py-16 transition-[padding] duration-300 ease-out data-collapsed:py-1.5 sm:py-24 motion-reduce:transition-none',
+    className,
+  ]}
+  data-section
+  data-endpoint-label={`${method} ${path}`}
+>
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <SectionTitle id={titleId} bodyId={bodyId} title={title} method={method} path={path} status={status ?? undefined} />
+    <div id={bodyId} data-section-body>
+      <slot />
+    </div>
+  </div>
+</section>
+
+<script>
+  import '../scripts/sections';
+</script>

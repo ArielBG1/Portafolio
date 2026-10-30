@@ -1,0 +1,74 @@
+---
+import { Icon } from 'astro-icon/components';
+import Section from './Section.astro';
+import { education } from '../data/education';
+import { getLang, getSectionId, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const { degrees, courses, languages } = education[lang];
+---
+
+<Section id={getSectionId(lang, 'education')} title={t('education.title')}>
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div class="card card-hover p-6" data-reveal>
+      <h3 class="flex items-center gap-2.5 text-lg font-semibold">
+        <Icon name="lucide:school" class="size-5 text-brand-2" aria-hidden="true" />
+        {t('education.academic')}
+      </h3>
+      <ul class="mt-5 space-y-5">
+        {
+          degrees.map((degree) => (
+            <li class="border-l-2 border-accent/60 pl-4">
+              <p class="font-semibold">{degree.title}</p>
+              <p class="mt-1 text-sm text-muted">{degree.institution}</p>
+              {degree.detail && (
+                <p class="mt-2 inline-flex rounded-lg border border-border bg-surface-2 px-2.5 py-1 font-mono text-xs text-brand-2">
+                  {degree.detail}
+                </p>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="card card-hover p-6" data-reveal style="--reveal-delay: 100ms">
+      <h3 class="flex items-center gap-2.5 text-lg font-semibold">
+        <Icon name="lucide:award" class="size-5 text-brand-2" aria-hidden="true" />
+        {t('education.courses')}
+      </h3>
+      <ul class="mt-5 space-y-5">
+        {
+          courses.map((course) => (
+            <li class="border-l-2 border-accent/60 pl-4">
+              <p class="font-semibold">{course.title}</p>
+              <p class="mt-1 text-sm text-muted">{course.institution}</p>
+              <p class="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-2.5 py-1 font-mono text-xs text-brand-2">
+                <Icon name="lucide:clock" class="size-3.5" aria-hidden="true" />
+                {`${course.hours} ${t('education.hours')}`}
+              </p>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="card card-hover p-6" data-reveal style="--reveal-delay: 200ms">
+      <h3 class="flex items-center gap-2.5 text-lg font-semibold">
+        <Icon name="lucide:languages" class="size-5 text-brand-2" aria-hidden="true" />
+        {t('education.languages')}
+      </h3>
+      <dl class="mt-5 space-y-3">
+        {
+          languages.map((language) => (
+            <div class="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface-2 px-4 py-3">
+              <dt class="font-semibold">{language.name}</dt>
+              <dd class="text-right text-sm text-muted">{language.level}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </div>
+</Section>

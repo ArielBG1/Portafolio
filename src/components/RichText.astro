@@ -1,0 +1,12 @@
+---
+import { parseRichText } from '../lib/rich-text';
+
+interface Props {
+  /** Texto con negritas estilo Markdown (`**así**`). */
+  text: string;
+}
+
+const segments = parseRichText(Astro.props.text);
+---
+
+{segments.map((segment) => (segment.strong ? <strong class="font-semibold text-fg">{segment.text}</strong> : segment.text))}

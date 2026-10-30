@@ -1,0 +1,30 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import About from './About.astro';
+import Contact from './Contact.astro';
+import Education from './Education.astro';
+import Experience from './Experience.astro';
+import Footer from './Footer.astro';
+import GithubActivity from './GithubActivity.astro';
+import Hero from './Hero.astro';
+import Navbar from './Navbar.astro';
+import Projects from './Projects.astro';
+import SectionsToolbar from './SectionsToolbar.astro';
+import Stack from './Stack.astro';
+---
+
+<BaseLayout>
+  <Navbar />
+  <main id="main-content" tabindex="-1" class="outline-none">
+    <Hero />
+    <SectionsToolbar />
+    <About />
+    <Stack />
+    <Experience />
+    <Projects />
+    <GithubActivity />
+    <Education />
+    <Contact />
+  </main>
+  <Footer />
+</BaseLayout>

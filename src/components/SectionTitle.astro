@@ -1,0 +1,48 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { HttpMethod } from '../lib/http';
+import { getLang, useTranslations } from '../i18n/utils';
+
+interface Props {
+  /** id del `<h2>`, para `aria-labelledby` de la sección. */
+  id: string;
+  /** id del contenido que se colapsa (`aria-controls`). */
+  bodyId: string;
+  title: string;
+  method: HttpMethod;
+  path: string;
+  /** Status que se muestra a la derecha. Sin status, queda "pendiente…". */
+  status?: string;
+}
+
+const { id, bodyId, title, method, path, status } = Astro.props;
+const t = useTranslations(getLang(Astro.currentLocale));
+---
+
+{/* Bloque de operación al estilo Swagger UI: el título es un botón que colapsa la sección. */}
+<div class:list={['opblock mb-10 transition-[margin] duration-300 ease-out group-data-collapsed/section:mb-0 sm:mb-12 motion-reduce:transition-none', method === 'POST' ? 'opblock-post' : 'opblock-get']} data-endpoint>
+  <h2 id={id}>
+    <button
+      type="button"
+      class="opblock-summary group flex w-full flex-col items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition-[padding,gap,border-color] duration-300 aria-[expanded=false]:gap-1.5 aria-[expanded=false]:py-2.5 sm:px-5 sm:py-4 motion-reduce:transition-none"
+      aria-expanded="true"
+      aria-controls={bodyId}
+      data-collapse
+    >
+      <span class="flex w-full items-center gap-3 font-mono text-xs sm:text-sm" aria-hidden="true">
+        <span class="method-solid">{method}</span>
+        <span class="text-fg" data-type>{path}</span>
+        <span class="h-px min-w-6 flex-1 origin-left border-t border-dashed border-current opacity-30" data-leader></span>
+        <span class:list={['shrink-0', status ? 'text-ok' : 'text-muted']} data-status>{status ?? t('status.pending')}</span>
+      </span>
+      <span class="flex w-full items-center gap-3">
+        <span class="text-2xl font-semibold tracking-tight text-balance text-fg sm:text-3xl group-aria-[expanded=false]:text-xl">{title}</span>
+        <Icon
+          name="lucide:chevron-down"
+          class="ml-auto size-5 shrink-0 text-muted transition-transform duration-300 group-aria-[expanded=false]:-rotate-90"
+          aria-hidden="true"
+        />
+      </span>
+    </button>
+  </h2>
+</div>

@@ -1,0 +1,129 @@
+---
+import '@fontsource/ibm-plex-sans/latin-400.css';
+import '@fontsource/ibm-plex-sans/latin-500.css';
+import '@fontsource/ibm-plex-sans/latin-600.css';
+import '@fontsource/ibm-plex-mono/latin-400.css';
+import '@fontsource/ibm-plex-mono/latin-600.css';
+import '../styles/global.css';
+
+import plexSansRegular from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2?url';
+import plexSansSemibold from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2?url';
+import { getAbsoluteLocaleUrl } from 'astro:i18n';
+import { defaultLang, languages, ogLocales } from '../i18n/ui';
+import { getLang, isLang, useTranslations } from '../i18n/utils';
+import { profile } from '../data/profile';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const { title = t('meta.title'), description = t('meta.description') } = Astro.props;
+
+const site = Astro.site ?? new URL(Astro.url.origin);
+const canonical = new URL(Astro.url.pathname, site).href;
+const ogImage = new URL('/og-image.png', site).href;
+const langCodes = Object.keys(languages).filter(isLang);
+const alternates = langCodes.map((code) => ({ code, href: getAbsoluteLocaleUrl(code, '') }));
+const defaultAlternate = getAbsoluteLocaleUrl(defaultLang, '');
+
+// Datos estructurados (schema.org) para buscadores.
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: profile.fullName,
+  alternateName: profile.name,
+  jobTitle: profile.title,
+  url: getAbsoluteLocaleUrl(lang, ''),
+  email: `mailto:${profile.email}`,
+  image: ogImage,
+  address: { '@type': 'PostalAddress', addressCountry: 'PY' },
+  sameAs: [profile.linkedin, profile.github],
+};
+---
+
+<!doctype html>
+<html lang={lang} class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      // Se ejecuta antes del primer render para aplicar el tema guardado sin flash.
+      (function () {
+        var root = document.documentElement;
+        root.classList.add('js');
+        var theme = 'dark';
+        try {
+          var stored = window.localStorage.getItem('theme');
+          if (stored === 'light' || stored === 'dark') theme = stored;
+        } catch (error) {
+          // localStorage no disponible (modo privado, cookies bloqueadas): se usa el tema por defecto.
+        }
+        root.classList.toggle('dark', theme === 'dark');
+        // Red de seguridad: si el script de animaciones no arranca a tiempo, se muestra todo sin animar.
+        window.setTimeout(function () {
+          if (!root.classList.contains('motion-ready')) root.classList.add('motion-fallback');
+        }, 3000);
+      })();
+    </script>
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={profile.name} />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#0B0B14" />
+    <link rel="canonical" href={canonical} />
+    {alternates.map(({ code, href }) => <link rel="alternate" hreflang={code} href={href} />)}
+    <link rel="alternate" hreflang="x-default" href={defaultAlternate} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <link rel="preload" href={plexSansRegular} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={plexSansSemibold} as="font" type="font/woff2" crossorigin />
+
+    {/* Open Graph */}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={profile.name} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={ogLocales[lang]} />
+    {
+      langCodes
+        .filter((code) => code !== lang)
+        .map((code) => <meta property="og:locale:alternate" content={ogLocales[code]} />)
+    }
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={t('meta.ogAlt')} />
+
+    {/* Twitter */}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={t('meta.ogAlt')} />
+
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+  </head>
+  <body class="min-h-dvh">
+    <a
+      href="#main-content"
+      class="sr-only z-[100] rounded-xl bg-surface px-4 py-3 font-semibold text-fg shadow-lg focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+    >
+      {t('a11y.skip')}
+    </a>
+    <slot />
+
+    <script>
+      import '../scripts/motion';
+    </script>
+  </body>
+</html>

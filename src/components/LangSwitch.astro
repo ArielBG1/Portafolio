@@ -1,0 +1,28 @@
+---
+import { languages } from '../i18n/ui';
+import { getHomeUrl, getLang, isLang, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const codes = Object.keys(languages).filter(isLang);
+---
+
+<div role="group" aria-label={t('lang.label')} class="flex items-center gap-0.5 rounded-xl border border-border bg-surface/60 p-0.5 font-mono text-xs">
+  {
+    codes.map((code) => (
+      <a
+        href={getHomeUrl(code)}
+        hreflang={code}
+        lang={code}
+        aria-current={code === lang ? 'page' : undefined}
+        class:list={[
+          'inline-flex h-9 min-w-10 items-center justify-center rounded-[0.6rem] px-2 font-medium transition-colors',
+          code === lang ? 'bg-primary text-white' : 'text-muted hover:bg-surface-2 hover:text-fg',
+        ]}
+      >
+        {code.toUpperCase()}
+        <span class="sr-only">{` – ${languages[code]}`}</span>
+      </a>
+    ))
+  }
+</div>

@@ -1,0 +1,140 @@
+---
+import { Icon } from 'astro-icon/components';
+import LangSwitch from './LangSwitch.astro';
+import Logo from './Logo.astro';
+import ThemeToggle from './ThemeToggle.astro';
+import { profile } from '../data/profile';
+import type { SectionKey, UiKey } from '../i18n/ui';
+import { getHomeUrl, getLang, getSectionHref, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+const sections = [
+  { key: 'about', label: 'nav.about' },
+  { key: 'stack', label: 'nav.stack' },
+  { key: 'experience', label: 'nav.experience' },
+  { key: 'projects', label: 'nav.projects' },
+  { key: 'education', label: 'nav.education' },
+  { key: 'contact', label: 'nav.contact' },
+] as const satisfies readonly { key: SectionKey; label: UiKey }[];
+
+const links = sections.map(({ key, label }) => ({ href: getSectionHref(lang, key), label: t(label) }));
+---
+
+<header class="fixed inset-x-0 top-0 z-50 border-b border-border/70 bg-bg/75 backdrop-blur-lg backdrop-saturate-150">
+  <nav aria-label={t('nav.label')} class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+    <a href={getHomeUrl(lang)} class="flex items-center gap-2.5 rounded-xl" aria-label={t('nav.home')}>
+      <Logo class="size-9" />
+      <span class="hidden font-semibold tracking-tight sm:inline" aria-hidden="true">{profile.name}</span>
+    </a>
+
+    {/* Endpoint de la sección visible (tablet). En escritorio se marca el link activo. */}
+    <p
+      class="mr-auto ml-2 hidden min-w-0 items-center gap-2 truncate font-mono text-xs text-muted sm:flex lg:hidden"
+      aria-hidden="true"
+      data-current-endpoint
+    >
+      <span class="method text-get" data-current-method>GET</span>
+      <span class="truncate" data-current-path>{profile.apiPath}</span>
+    </p>
+
+    <ul class="hidden items-center gap-1 lg:flex">
+      {
+        links.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              class="relative rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-fg after:absolute after:inset-x-3 after:bottom-1 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-brand after:transition-transform aria-[current=location]:text-fg aria-[current=location]:after:scale-x-100"
+              data-nav-link
+            >
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="flex items-center gap-1.5">
+      <LangSwitch />
+      <ThemeToggle />
+      <button
+        type="button"
+        class="icon-btn group lg:hidden"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+        aria-label={t('nav.openMenu')}
+        data-label-open={t('nav.openMenu')}
+        data-label-close={t('nav.closeMenu')}
+        data-menu-toggle
+      >
+        <Icon name="lucide:menu" is:inline class="size-5 group-aria-expanded:hidden" aria-hidden="true" />
+        <Icon name="lucide:x" is:inline class="hidden size-5 group-aria-expanded:block" aria-hidden="true" />
+      </button>
+    </div>
+  </nav>
+
+  <div id="mobile-menu" class="border-t border-border/70 lg:hidden" hidden data-menu>
+    <ul class="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3 sm:px-6">
+      {
+        links.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              class="flex min-h-11 items-center rounded-xl px-3 text-base font-medium text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+              data-menu-link
+            >
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  {/* Progreso del "request": se llena a medida que se recorre la página. */}
+  <div class="absolute inset-x-0 bottom-0 h-px" aria-hidden="true">
+    <div class="h-full origin-left scale-x-0 bg-linear-to-r from-primary via-accent to-secondary" data-progress></div>
+  </div>
+</header>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const menu = document.querySelector<HTMLElement>('[data-menu]');
+
+  if (toggle && menu) {
+    const desktopQuery = window.matchMedia('(min-width: 64rem)');
+
+    const setOpen = (open: boolean): void => {
+      menu.hidden = !open;
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', (open ? toggle.dataset.labelClose : toggle.dataset.labelOpen) ?? '');
+    };
+
+    const isOpen = (): boolean => toggle.getAttribute('aria-expanded') === 'true';
+
+    toggle.addEventListener('click', () => setOpen(!isOpen()));
+
+    menu.querySelectorAll<HTMLAnchorElement>('[data-menu-link]').forEach((link) => {
+      link.addEventListener('click', () => setOpen(false));
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && isOpen()) {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      if (isOpen() && target instanceof Node && !menu.contains(target) && !toggle.contains(target)) {
+        setOpen(false);
+      }
+    });
+
+    desktopQuery.addEventListener('change', (event) => {
+      if (event.matches) setOpen(false);
+    });
+  }
+</script>

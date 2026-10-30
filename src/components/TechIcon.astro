@@ -1,0 +1,23 @@
+---
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  /** id de Iconify (`skill-icons:*` o `devicon:*`). */
+  icon: string;
+  class?: string;
+}
+
+const { icon, class: className } = Astro.props;
+// Los íconos de skill-icons ya traen su "baldosa" oscura; a los de devicon se la agregamos para que se vean parejos.
+const needsTile = !icon.startsWith('skill-icons:');
+---
+
+{
+  needsTile ? (
+    <span class:list={['inline-flex shrink-0 items-center justify-center rounded-[23%] bg-[#242938]', className]} aria-hidden="true">
+      <Icon name={icon} class="size-[85%]" />
+    </span>
+  ) : (
+    <Icon name={icon} class:list={['shrink-0', className]} aria-hidden="true" />
+  )
+}

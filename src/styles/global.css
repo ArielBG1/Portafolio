@@ -1,0 +1,426 @@
+@import 'tailwindcss';
+
+/* Modo oscuro por clase (`<html class="dark">`), controlado por ThemeToggle. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Paleta de marca (fija en ambos temas) */
+  --color-primary: #512bd4;
+  --color-accent: #7c6cf2;
+  --color-secondary: #00b4d8;
+  --color-cyclo: #10b981;
+
+  --animate-blink: blink 1.1s step-end infinite;
+
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+}
+
+/* Colores que cambian según el tema. Todos los de texto cumplen contraste AA sobre bg/surface. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+
+  /* Semántica HTTP: métodos y familias de status. */
+  --color-get: var(--get);
+  --color-post: var(--post);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-err: var(--err);
+}
+
+:root {
+  --bg: #f6f6fa;
+  --surface: #ffffff;
+  --surface-2: #efeff6;
+  --border: #dcdce8;
+  --fg: #14141f;
+  --muted: #55556b;
+  --brand: #512bd4;
+  --brand-2: #0b6e8f;
+
+  --get: #085a75;
+  --post: #065f46;
+  --ok: #047857;
+  --warn: #b45309;
+  --err: #b91c1c;
+
+  --grid-line: rgb(20 20 31 / 0.06);
+  --shadow-card: 0 18px 40px -28px rgb(81 43 212 / 0.45);
+
+  color-scheme: light;
+}
+
+:root.dark {
+  --bg: #0b0b14;
+  --surface: #13131f;
+  --surface-2: #1a1a2a;
+  --border: #23233a;
+  --fg: #e6e6f0;
+  --muted: #9a9ab0;
+  --brand: #a397f7;
+  --brand-2: #00b4d8;
+
+  --get: #00b4d8;
+  --post: #10b981;
+  --ok: #10b981;
+  --warn: #f59e0b;
+  --err: #f87171;
+
+  --grid-line: rgb(230 230 240 / 0.045);
+  --shadow-card: 0 18px 40px -22px rgb(0 0 0 / 0.75);
+
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    scroll-padding-top: 5.5rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand-2);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background-color: rgb(124 108 242 / 0.35);
+  }
+}
+
+@layer components {
+  /* Tarjeta base: borde sutil; al hacer hover, borde de marca y leve elevación. */
+  .card {
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
+    background-color: var(--surface);
+    transition:
+      translate 0.25s ease,
+      box-shadow 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .card-hover:hover,
+  .card-hover:focus-within {
+    border-color: color-mix(in srgb, var(--brand) 55%, var(--border));
+    box-shadow: var(--shadow-card);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card-hover:hover {
+      translate: 0 -3px;
+    }
+  }
+
+  /* Consola: siempre oscura (como los bloques de código de una documentación), en ambos temas. */
+  .console {
+    --c-bg: #0e0e19;
+    --c-bar: #151524;
+    --c-border: #262640;
+    --c-fg: #e6e6f0;
+    --c-muted: #9a9ab0;
+    --c-key: #a397f7;
+    --c-string: #34d399;
+    --c-number: #38bdf8;
+    --c-punct: #8b8ba3;
+    --c-get: #00b4d8;
+    --c-post: #10b981;
+    --c-ok: #10b981;
+    --c-warn: #f59e0b;
+    --c-err: #f87171;
+
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--c-border);
+    background-color: var(--c-bg);
+    color: var(--c-fg);
+    font-family: var(--font-mono);
+    box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.6);
+  }
+
+  .console-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    border-bottom: 1px solid var(--c-border);
+    background-color: var(--c-bar);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  .tok-key {
+    color: var(--c-key);
+  }
+  .tok-string {
+    color: var(--c-string);
+  }
+  .tok-number {
+    color: var(--c-number);
+  }
+  .tok-punct {
+    color: var(--c-punct);
+  }
+
+  /* Badge de método HTTP (GET, POST). El color sale de `currentColor`. */
+  .method {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.4rem;
+    border-radius: 0.375rem;
+    border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+    background-color: color-mix(in srgb, currentColor 12%, transparent);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+
+  /* Terminal del footer: siempre oscura; cada shell trae su paleta (todas con contraste AA). */
+  .terminal {
+    --t-bar: #15151f;
+    --t-border: #262640;
+    --t-tab: #9a9ab0;
+    background-color: var(--t-bg);
+    color: var(--t-fg);
+    transition: background-color 0.3s ease;
+  }
+
+  .terminal[data-shell='ps'] {
+    --t-bg: #012456;
+    --t-fg: #eeedf0;
+    --t-muted: #9fb2d6;
+    --t-prompt: #eeedf0;
+    --t-cmd: #f9f1a5;
+    --t-accent: #61d6d6;
+    --t-get: #61d6d6;
+    --t-post: #16c60c;
+    --t-frame: #61d6d6;
+    --t-user: #61d6d6;
+  }
+
+  .terminal[data-shell='kali'] {
+    --t-bg: #0d1016;
+    --t-fg: #e8e8ea;
+    --t-muted: #9a9ab0;
+    --t-prompt: #e8e8ea;
+    --t-cmd: #e8e8ea;
+    --t-accent: #6aa6ff;
+    --t-get: #6aa6ff;
+    --t-post: #4ade80;
+    --t-frame: #3d8bfd;
+    --t-user: #6aa6ff;
+  }
+
+  .terminal[data-shell='cmd'] {
+    --t-bg: #0c0c0c;
+    --t-fg: #cccccc;
+    --t-muted: #9a9a9a;
+    --t-prompt: #cccccc;
+    --t-cmd: #f2f2f2;
+    --t-accent: #3a96dd;
+    --t-get: #3a96dd;
+    --t-post: #16c60c;
+    --t-frame: #cccccc;
+    --t-user: #cccccc;
+  }
+
+  .terminal-tab {
+    color: var(--t-tab);
+  }
+
+  .terminal-tab:hover {
+    color: #e6e6f0;
+  }
+
+  .terminal-tab[aria-pressed='true'] {
+    color: var(--t-fg);
+    background-color: var(--t-bg);
+  }
+
+  .t-link {
+    color: var(--t-accent);
+    text-underline-offset: 3px;
+  }
+
+  .t-link:hover {
+    text-decoration-line: underline;
+  }
+
+  /* El último prompt ("cd ~") es el link de volver arriba. */
+  .group:hover [data-term-cmd],
+  .group:focus-visible [data-term-cmd] {
+    text-decoration-line: underline;
+  }
+
+  .t-cursor {
+    display: inline-block;
+    width: 0.6ch;
+    height: 1.1em;
+    margin-left: 0.25ch;
+    translate: 0 0.2em;
+    background-color: var(--t-fg);
+  }
+
+  /* Bloques de operación estilo Swagger UI (encabezado de cada sección). */
+  .opblock-get {
+    --op: var(--get);
+  }
+
+  .opblock-post {
+    --op: var(--post);
+  }
+
+  .opblock-summary {
+    border-color: color-mix(in srgb, var(--op) 40%, var(--border));
+    background-color: color-mix(in srgb, var(--op) 7%, var(--surface));
+  }
+
+  .opblock-summary:hover {
+    border-color: color-mix(in srgb, var(--op) 75%, var(--border));
+  }
+
+  .method-solid {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.375rem;
+    background-color: var(--op, var(--get));
+    color: var(--bg);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.625rem 1.15rem;
+    border-radius: var(--radius-lg);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    line-height: 1.25;
+    transition:
+      translate 0.2s ease,
+      box-shadow 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .btn-primary {
+    color: #fff;
+    background-color: var(--color-primary);
+    box-shadow: 0 10px 24px -14px rgb(81 43 212 / 0.9);
+  }
+
+  .btn-primary:hover {
+    background-color: #4522c0;
+    box-shadow: 0 14px 28px -12px rgb(81 43 212 / 0.85);
+  }
+
+  .btn-secondary {
+    color: var(--fg);
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .btn:hover {
+      translate: 0 -2px;
+    }
+  }
+
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--radius-lg);
+    color: var(--muted);
+    border: 1px solid transparent;
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .icon-btn:hover {
+    color: var(--fg);
+    background-color: var(--surface-2);
+    border-color: var(--border);
+  }
+
+  .text-gradient {
+    background-image: linear-gradient(120deg, #a397f7, #00b4d8);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  /* Grilla de fondo tipo "papel milimetrado" de diagrama técnico. */
+  .bg-grid {
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+}
+
+/*
+ * Terminal del footer: solo se ve el prompt del shell activo.
+ * Va fuera de @layer para ganarle a utilidades como `block` que llevan esos mismos elementos.
+ */
+.terminal[data-shell='ps'] [data-shell-only]:not([data-shell-only='ps']),
+.terminal[data-shell='kali'] [data-shell-only]:not([data-shell-only='kali']),
+.terminal[data-shell='cmd'] [data-shell-only]:not([data-shell-only='cmd']) {
+  display: none;
+}
+
+/*
+ * Estados iniciales de las animaciones (GSAP, ver src/scripts/motion.ts).
+ * Solo aplican si hay JS y no se pidió reducir movimiento. Si el script de animación no arranca en 3 s,
+ * BaseLayout agrega `.motion-fallback` y todo se muestra sin animar.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .js:not(.motion-fallback) [data-reveal] {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+
+  .js:not(.motion-fallback) [data-stream] {
+    opacity: 0;
+  }
+
+  .js:not(.motion-fallback) [data-type] {
+    clip-path: inset(0 100% 0 0);
+  }
+}

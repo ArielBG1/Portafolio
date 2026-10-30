@@ -1,0 +1,93 @@
+---
+import { Icon } from 'astro-icon/components';
+import Section from './Section.astro';
+import TechIcon from './TechIcon.astro';
+import { stackLayers, stackTools } from '../data/stack';
+import { getLang, getSectionId, useTranslations } from '../i18n/utils';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const sectionId = getSectionId(lang, 'stack');
+const total = stackLayers.reduce((sum, layer) => sum + layer.items.length, 0) + stackTools.items.length;
+const headingId = (label: string) => `stack-${label.replace('stack.', '')}`;
+---
+
+<Section id={sectionId} title={t('stack.title')}>
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]" data-stack>
+    {/* Diagrama de capas: el "paquete" baja con el scroll (request) y vuelve con 200 OK (response). */}
+    <div class="relative" data-pipeline>
+      <span class="absolute top-6 bottom-6 left-[1.1rem] w-px bg-border" aria-hidden="true">
+        <span class="absolute inset-0 origin-top bg-brand" data-pipeline-fill></span>
+      </span>
+      <span
+        class="pointer-events-none absolute top-6 left-[1.1rem] z-10 hidden size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent shadow-[0_0_0_6px_rgb(124_108_242/0.22)] motion-safe:block"
+        aria-hidden="true"
+        data-packet
+      ></span>
+
+      <ol class="space-y-0">
+        {
+          stackLayers.map((layer) => (
+            <li class="relative pl-12" data-layer>
+              <span
+                class="absolute top-6 left-[1.1rem] size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-brand bg-bg"
+                aria-hidden="true"
+              />
+              <div class="card p-4 sm:p-5" data-layer-card data-reveal>
+                <h3 id={headingId(layer.label)} class="flex items-center gap-2.5 font-semibold">
+                  <Icon name={`lucide:${layer.icon}`} class="size-5 text-brand-2" aria-hidden="true" />
+                  {t(layer.label)}
+                </h3>
+                <ul class="mt-4 flex flex-wrap gap-2" aria-labelledby={headingId(layer.label)}>
+                  {layer.items.map((tech) => (
+                    <li class="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-2 py-1 pr-3 pl-1 text-sm" data-tech>
+                      <TechIcon icon={tech.icon} class="size-7" />
+                      {tech.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {layer.link && (
+                <p class="flex h-12 items-center font-mono text-xs text-muted" aria-hidden="true">
+                  <span class="inline-flex items-center gap-1.5 rounded border border-dashed border-border px-2 py-0.5">
+                    <Icon name="lucide:arrow-up-down" class="size-3.5" />
+                    {t(layer.link)}
+                  </span>
+                </p>
+              )}
+            </li>
+          ))
+        }
+      </ol>
+      {/* Estado del "request": mientras el paquete viaja muestra el GET; al volver, la respuesta. */}
+      <p class="mt-6 grid pl-12 font-mono text-sm" aria-hidden="true" data-stack-summary>
+        <span class="col-start-1 row-start-1 flex items-center gap-2 text-get opacity-0" data-packet-request>
+          <Icon name="lucide:arrow-right" class="size-4" />
+          {`GET /${sectionId}`}
+        </span>
+        <span class="col-start-1 row-start-1 flex items-center gap-2 text-ok" data-packet-response>
+          <Icon name="lucide:arrow-left" class="size-4" />
+          {`${t('status.ok')} · ${total} ${t('stack.total')}`}
+        </span>
+      </p>
+    </div>
+
+    <aside class="card self-start p-4 sm:p-5" aria-labelledby={headingId(stackTools.label)} data-reveal>
+      <h3 id={headingId(stackTools.label)} class="flex items-center gap-2.5 font-semibold">
+        <Icon name={`lucide:${stackTools.icon}`} class="size-5 text-brand-2" aria-hidden="true" />
+        {t(stackTools.label)}
+      </h3>
+      <ul class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2">
+        {
+          stackTools.items.map((tech) => (
+            <li class="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-surface-2 p-2.5 text-center text-xs" data-tech>
+              <TechIcon icon={tech.icon} class="size-9" />
+              {tech.name}
+            </li>
+          ))
+        }
+      </ul>
+    </aside>
+  </div>
+
+</Section>
